@@ -1,0 +1,14 @@
+{
+  "required": true,
+  "package": "com.nikita23830.fixf11.mixins",
+  "mixins": [],
+  "server": [],
+  "client": [
+    "EventBusMixin",
+    "NetHandlerPlayClientMixin",
+    "AbstractClientPlayerMixin"
+  ],
+  "compatibilityLevel": "JAVA_8",
+  "refmap": "mixin.fixf11.refmap.json",
+  "minVersion": "0.7.11"
+}

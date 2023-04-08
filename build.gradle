@@ -1,0 +1,120 @@
+buildscript {
+    repositories {
+        mavenCentral()
+        maven {
+            name = "forge"
+            url = "http://files.minecraftforge.net/maven"
+        }
+        maven {
+            name = "sonatype"
+            url = "https://oss.sonatype.org/content/repositories/snapshots/"
+        }
+    }
+    dependencies {
+        classpath 'net.minecraftforge.gradle:ForgeGradle:1.2-SNAPSHOT'
+    }
+}
+
+apply plugin: 'forge'
+
+sourceCompatibility = 1.8
+targetCompatibility = 1.8
+compileJava.options.encoding = 'UTF-8'
+
+tasks.withType(JavaCompile) {
+    options.encoding = 'UTF-8'
+}
+
+version = ""
+group= "com.nikita23830"
+
+ext {
+    mixinSrg = new File(project.buildDir, 'tmp/mixins/mixin.pcf.srg')
+    mixinRefMap = new File(project.buildDir, "tmp/mixins/mixin.fixf11.refmap.json")
+}
+
+reobf.addExtraSrgFile project.mixinSrg
+
+minecraft {
+    version = "1.7.10-10.13.4.1614-1.7.10"
+    runDir = "eclipse"
+}
+
+compileJava {
+    options.compilerArgs += [
+            '-Xlint:-processing',
+            "-AoutSrgFile=${project.mixinSrg.canonicalPath}",
+            "-AoutRefMapFile=${project.mixinRefMap.canonicalPath}",
+            "-AreobfSrgFile=${project.file('build/srgs/mcp-srg.srg').canonicalPath}"
+    ]
+}
+
+afterEvaluate {
+    tasks.compileJava.options.compilerArgs += "-AreobfSrgFile=${tasks.reobf.srg}"
+}
+
+task copySrgs(type: Copy, dependsOn: 'genSrgs') {
+    from plugins.getPlugin("forge").delayedFile('{SRG_DIR}')
+
+    include '**/*.srg'
+    into 'build/srgs'
+}
+
+configurations {
+    shade
+    compile.extendsFrom shade
+}
+
+repositories {
+    maven {
+        name = "SpongePowered"
+        url = "https://repo.spongepowered.org/maven"
+    }
+}
+
+configurations {
+    toJar
+}
+
+dependencies {
+    shade("org.spongepowered:mixin:0.7.11-SNAPSHOT"){
+        exclude module: 'launchwrapper'
+        exclude module: 'guava'
+    }
+    compile 'com.google.code.gson:gson:2.8.0'
+    compileOnly fileTree(dir: 'lib', include: ['*.jar'])
+}
+
+
+jar {
+    from project.mixinRefMap
+
+    manifest {
+            attributes 'FMLCorePlugin': 'com.nikita23830.fixf11.FMLCoreMod',
+                    'FMLCorePluginContainsFMLMod': 'false',
+                    'TweakClass': 'org.spongepowered.asm.launch.MixinTweaker',
+                    'TweakOrder': '0'
+    }
+
+    configurations.shade.each { dep ->
+        from(project.zipTree(dep)){
+            include 'org/spongepowered', 'org/spongepowered/**'
+        }
+    }
+
+    from { configurations.toJar.collect { it.isDirectory() ? it : zipTree(it) } }
+}
+
+processResources {
+    inputs.property "version", project.version
+    inputs.property "mcversion", project.minecraft.version
+    from(sourceSets.main.resources.srcDirs) {
+        include 'mcmod.info'
+        expand 'version': project.version, 'mcversion': project.minecraft.version
+    }
+    from(sourceSets.main.resources.srcDirs) {
+        exclude 'mcmod.info'
+    }
+}
+
+compileJava.dependsOn copySrgs

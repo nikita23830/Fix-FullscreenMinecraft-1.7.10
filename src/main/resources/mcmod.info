@@ -1,0 +1,17 @@
+[
+  {
+    "modid": "SCChat",
+    "name": "SCChat",
+    "description": "",
+    "version": "${version}",
+    "mcversion": "${mcversion}",
+    "updateUrl": "",
+    "authorList": [
+      "ecmascript"
+    ],
+    "credits": "",
+    "logoFile": "",
+    "screenshots": [],
+    "dependencies": ["CabHelper"]
+  }
+]
